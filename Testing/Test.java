@@ -4,8 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Stream;
 
 
@@ -25,13 +27,20 @@ public class Test {
     public void testAll(){
         String[] data = new File(directory).list();
         data = Stream.of(data).filter(s -> s.contains(".in")).toArray(size -> new String[size]);
+        Set<String> badRuns = new HashSet<String>();
         for(String e : data){
             e = e.replace(".in", "");
             System.out.println("------------------------\n"
                              + "Case "+e+"\n"
                              + "------------------------");
-            if(!testCase(e)) break;
+            if(!testCase(e)) {
+            	badRuns.add(e);
+            }
         }
+     
+        System.out.println("\nTests successful: " + (data.length - badRuns.size()) + "/" + data.length);
+        System.out.println("Failed Tests: " + badRuns.toString());
+        
     }
     
     public boolean testCase(String name){
@@ -69,10 +78,10 @@ public class Test {
             System.out.println("File not found: "+filename);
         }
         Scanner s = new Scanner(r);
-        String correctOutput = "";
-        while(s.hasNext()) correctOutput += s.nextLine();
+        StringBuilder correctOutput = new StringBuilder();
+        while(s.hasNext()) { correctOutput.append(s.nextLine());}
         s.close();
-        return correctOutput;
+        return correctOutput.toString();
         
     }
 
