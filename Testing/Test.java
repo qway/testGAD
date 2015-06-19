@@ -19,8 +19,8 @@ public class Test
 	private String directory;
 	private Method main;
 	private static ByteArrayOutputStream generatedOutputStream = new ByteArrayOutputStream();
-	private static final  Logger LOGGER = Logger.getLogger(Test.class.getName());
-	private static final  Level failLogLevel = Level.FINE;
+	private static final Logger LOGGER = Logger.getLogger(Test.class.getName());
+	private static final Level failLogLevel = Level.FINE;
 	private static final Level succLogLevel = Level.FINER;
 	
 	static {

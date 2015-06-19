@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,45 +15,48 @@ public class Main
 	private final static Logger LOGGER = Logger.getLogger(Test.class.getName());
 	private static Level streamLogLevel = Level.FINE;
 	private static Level fileLogLevel = Level.ALL;
+	
 
 	static
 	{
 		LOGGER.setUseParentHandlers(false);
-		LOGGER.setLevel(Level.INFO);
 		java.util.logging.StreamHandler shandler = new java.util.logging.StreamHandler(
 				StreamHandler.out, new LoggingFormatter());
 		LOGGER.addHandler(shandler);
 	}
-
+	
 	public static void main(String[] args)
 	{
-
+		
+		LOGGER.log(Level.INFO, "Parameters: " + Arrays.toString(args));
 		if (args.length != 3)
 		{
 			LOGGER.log(
 					Level.SEVERE,
 					"Invalid Parameters. Syntax: testGAD.jar testFolder programPath packageName.className\n"
 							+ "The testFolder and programPath needs to be a directory. className must be the .class file which"
-							+ "contains the main method of the program to test.\n"
+							+ " contains the main method of the program to test.\n"
 							+ "Example: java -jar testGAD.jar ./Test ./dhashing dhashing.Program");
 		}
 		else
 		{
 			try
 			{
-				String testFolder = args[0];
-				String programPath = args[1];
+				File testFolder = new File(args[0]);
+				File programPath = new File(args[1]);	
 				String className = args[2].replace(".class", "");
+				
+				LOGGER.log(Level.INFO,"programPath contains: " +  Arrays.toString(programPath.list()));
+				System.out.println(testFolder.isDirectory() +" "+ programPath.isDirectory() );
 
-				File file = new File(programPath);
-
-				URL url = file.toURI().toURL();
+				URL url = programPath.toURI().toURL();
 				URL[] urls = new URL[] { url };
 				ClassLoader cl = new URLClassLoader(urls);
+				
 
 				Class<?> mainClass = Class.forName(className, true, cl);
 				Method main = mainClass.getMethod("main", String[].class);
-				Test test = new Test(testFolder, main);
+				Test test = new Test(testFolder.getAbsolutePath(), main);
 				test.testAll();
 
 			}
