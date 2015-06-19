@@ -1,59 +1,77 @@
-package Testing;
+package testing;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.logging.Formatter;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 import java.util.stream.Stream;
 
 public class Test
 {
-	private int testAmount;
+	
 	private String directory;
-	private TestFunction testFunc;
+	private Method main;
 	private static ByteArrayOutputStream generatedOutputStream = new ByteArrayOutputStream();
-	private final static Logger LOGGER = Logger.getLogger(Test.class.getName());
-
-	public Test(String dir, TestFunction t)
+	private static final  Logger LOGGER = Logger.getLogger(Test.class.getName());
+	private static final  Level failLogLevel = Level.FINE;
+	private static final Level succLogLevel = Level.FINER;
+	
+	static {
+		LOGGER.setUseParentHandlers(false);
+		LOGGER.setLevel(Level.ALL);
+		java.util.logging.StreamHandler shandler= new java.util.logging.StreamHandler(StreamHandler.out, new LoggingFormatter());
+		shandler.setLevel(Main.getStreamLogLevel());
+		LOGGER.addHandler(shandler);
+		try
+		{
+			FileHandler fhandler = new FileHandler("./results.txt");
+			fhandler.setLevel(Main.getFileLogLevel());
+			LOGGER.addHandler(fhandler);
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Logging to file failed", e);
+		}
+	}
+	
+	public Test(String dir, Method main)
 	{
-		testAmount = new File(dir).list().length / 2;
+		
 		directory = dir;
-		testFunc = t;
+		this.main = main;
 	}
 
 	public void testAll()
 	{
 		
-		LOGGER.addHandler(new java.util.logging.StreamHandler(StreamHandler.out, new SimpleFormatter()));
-		LOGGER.setUseParentHandlers(false);
-		LOGGER.entering(Test.class.getName(), "testAll()");
 
 		long start = System.currentTimeMillis();
 		String[] data = new File(directory).list();
 		data = Stream.of(data).filter(s -> s.contains(".in"))
 				.toArray(size -> new String[size]);
 		Set<String> badRuns = new HashSet<String>();
-		for (String e : data)
+		for (String caseName : data)
 		{
-			e = e.replace(".in", "");
-			LOGGER.log(Level.FINE, "------------------------\n" + "Case " + e
-					+ "\n" + "------------------------");
-			if (!testCase(e))
+			caseName = caseName.replace(".in", "");
+			if (!testCase(caseName))
 			{
-				badRuns.add(e);
-
+				logCase(failLogLevel, caseName);
+				badRuns.add(caseName);
+			}
+			else {
+				logCase(succLogLevel, caseName);
 			}
 		}
 
 		LOGGER.log(Level.INFO,
-				"\nTests successful: " + (data.length - badRuns.size()) + "/"
+				"Tests successful: " + (data.length - badRuns.size()) + "/"
 						+ data.length);
 		LOGGER.log(Level.INFO, "Failed Tests: " + badRuns.toString());
 		long totalTime = System.currentTimeMillis() - start;
@@ -76,11 +94,12 @@ public class Test
 
 		try
 		{
-			testFunc.invoke();
+			String[] args = new String[]{};
+			main.invoke(main.getDeclaringClass(), (Object)args);
 		}
 		catch (Exception e)
 		{
-			LOGGER.log(Level.SEVERE, "Exception thrown: ", e);
+			LOGGER.log(Level.SEVERE, "Exception thrown while invoking main method: ", e);
 		}
 
 		StreamHandler.resetStreams();
@@ -99,15 +118,15 @@ public class Test
 
 		if (check)
 		{
-			LOGGER.log(Level.FINE, "Correct Output:   " + correctOutput);
-			LOGGER.log(Level.FINE, "Generated Output: " + generatedOutput);
-			LOGGER.log(Level.FINE, "Successful");
+			LOGGER.log(succLogLevel, "Correct Output:   " + correctOutput);
+			LOGGER.log(succLogLevel, "Generated Output: " + generatedOutput);
+			LOGGER.log(succLogLevel, "Successful");
 		}
 		else
 		{
-			LOGGER.log(Level.INFO, "Correct Output:   " + correctOutput);
-			LOGGER.log(Level.INFO, "Generated Output: " + generatedOutput);
-			LOGGER.log(Level.INFO, "Fail");
+			LOGGER.log(failLogLevel, "Correct Output:   " + correctOutput);
+			LOGGER.log(failLogLevel, "Generated Output: " + generatedOutput);
+			LOGGER.log(failLogLevel, "Fail");
 		}
 
 		return check;
@@ -133,6 +152,12 @@ public class Test
 		s.close();
 		return correctOutput.toString();
 
+	}
+	
+	private void logCase(Level logLevel, String caseName) {
+		
+		LOGGER.log(logLevel, "------------------------\n" + "Case " + caseName
+				+ "\n" + "------------------------");
 	}
 
 }
